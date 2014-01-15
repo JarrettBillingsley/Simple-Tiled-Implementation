@@ -26,8 +26,11 @@ THE SOFTWARE.
 ]]--
 
 local sti = {}
+local Map = {}
 
-function sti:new(map)
+function sti.new(map)
+	local ret = setmetatable({}, {__index = Map})
+
 	-- Load the map
 	local firstSlash = map:reverse():find("[/\\]")
 	local pathBase
@@ -40,13 +43,13 @@ function sti:new(map)
 
 	local mapFunc = assert(love.filesystem.load(map), "No map file named '" .. map .. "'")
 	setfenv(mapFunc, {})
-	self.map = mapFunc()
+	ret.map = mapFunc()
 
-	self.map.quads = {}
+	ret.map.quads = {}
 
 	-- Create array of quads, tileset's lastgid
 	local gid = 1
-	for i, tileset in ipairs(self.map.tilesets) do
+	for i, tileset in ipairs(ret.map.tilesets) do
 		local iw		= tileset.imagewidth
 		local ih		= tileset.imageheight
 		local tw		= tileset.tilewidth
@@ -66,21 +69,21 @@ function sti:new(map)
 				if x > 1 then qx = qx + s end
 				if y > 1 then qy = qy + s end
 
-				self.map.quads[gid] = love.graphics.newQuad(qx, qy, tw, th, iw, ih)
+				ret.map.quads[gid] = love.graphics.newQuad(qx, qy, tw, th, iw, ih)
 				gid = gid + 1
 			end
 		end
 	end
 
 	-- Add images
-	for i, tileset in ipairs(self.map.tilesets) do
+	for i, tileset in ipairs(ret.map.tilesets) do
 		tileset.image = love.graphics.newImage(pathBase .. tileset.image)
 	end
 
 	-- Add tile structure, images
-	for i, layer in ipairs(self.map.layers) do
+	for i, layer in ipairs(ret.map.layers) do
 		if layer.type == "tilelayer" then
-			layer.data = self:setTileLayer(layer)
+			layer.data = ret:setTileLayer(layer)
 		end
 
 		if layer.type == "imagelayer" then
@@ -88,22 +91,24 @@ function sti:new(map)
 		end
 	end
 
-	self.spriteBatches = {}
-	for i, tileset in ipairs(self.map.tilesets) do
-		local image = self.map.tilesets[i].image
+	ret.spriteBatches = {}
+	for i, tileset in ipairs(ret.map.tilesets) do
+		local image = ret.map.tilesets[i].image
 		local w = tileset.imagewidth / tileset.tilewidth
 		local h = tileset.imageheight / tileset.tileheight
 		local size = w * h
 
-		self.spriteBatches[i] = love.graphics.newSpriteBatch(image, size)
+		ret.spriteBatches[i] = love.graphics.newSpriteBatch(image, size)
 	end
+
+	return ret
 end
 
-function sti:update(dt)
+function Map:update(dt)
 
 end
 
-function sti:draw()
+function Map:draw()
 	for i, layer in ipairs(self.map.layers) do
 		if layer.type == "tilelayer" then
 			self:drawTileLayer(1, layer)
@@ -117,7 +122,7 @@ function sti:draw()
 	end
 end
 
-function sti:drawTileLayer(index, layer)
+function Map:drawTileLayer(index, layer)
 	if layer.visible then
 		love.graphics.setColor(255, 255, 255, 255 * layer.opacity)
 
@@ -140,7 +145,7 @@ function sti:drawTileLayer(index, layer)
 
 end
 
-function sti:drawObjectLayer(index, layer)
+function Map:drawObjectLayer(index, layer)
 	if layer.visible then
 		love.graphics.setColor(255, 255, 255, 255 * layer.opacity)
 
@@ -148,7 +153,7 @@ function sti:drawObjectLayer(index, layer)
 	end
 end
 
-function sti:drawImageLayer(index, layer)
+function Map:drawImageLayer(index, layer)
 	if layer.visible then
 		love.graphics.setColor(255, 255, 255, 255 * layer.opacity)
 		love.graphics.draw(layer.image, 0, 0)
@@ -156,7 +161,7 @@ function sti:drawImageLayer(index, layer)
 	end
 end
 
-function sti:setTileLayer(layer)
+function Map:setTileLayer(layer)
 	local i = 1
 	local map = {}
 	for y = 1, layer.height do
