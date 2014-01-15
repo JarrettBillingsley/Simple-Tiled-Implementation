@@ -50,14 +50,14 @@ function sti.new(map)
 	-- Create array of quads, tileset's lastgid
 	local gid = 1
 	for i, tileset in ipairs(ret.map.tilesets) do
-		local iw		= tileset.imagewidth
-		local ih		= tileset.imageheight
-		local tw		= tileset.tilewidth
-		local th		= tileset.tileheight
-		local s			= tileset.spacing
-		local m			= tileset.margin
-		local w			= math.floor((iw - m - s) / (tw + s))
-		local h			= math.floor((ih - m - s) / (th + s))
+		local iw = tileset.imagewidth
+		local ih = tileset.imageheight
+		local tw = tileset.tilewidth
+		local th = tileset.tileheight
+		local s  = tileset.spacing
+		local m  = tileset.margin
+		local w  = math.floor((iw - m - s) / (tw + s))
+		local h  = math.floor((ih - m - s) / (th + s))
 		tileset.lastgid	= tileset.firstgid + w * h - 1
 
 		for y = 1, h do
@@ -83,7 +83,7 @@ function sti.new(map)
 	-- Add tile structure, images
 	for i, layer in ipairs(ret.map.layers) do
 		if layer.type == "tilelayer" then
-			layer.data = ret:setTileLayer(layer)
+			layer.data = ret:createTileLayerData(layer)
 		end
 
 		if layer.type == "imagelayer" then
@@ -161,7 +161,7 @@ function Map:drawImageLayer(index, layer)
 	end
 end
 
-function Map:setTileLayer(layer)
+function Map:createTileLayerData(layer)
 	local i = 1
 	local map = {}
 	for y = 1, layer.height do
