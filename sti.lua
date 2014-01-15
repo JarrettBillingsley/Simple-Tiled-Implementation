@@ -33,11 +33,9 @@ function sti.new(map)
 
 	-- Load the map
 	local firstSlash = map:reverse():find("[/\\]")
-	local pathBase
+	local pathBase = ""
 
-	if firstSlash == nil then
-		pathBase = ""
-	else
+	if firstSlash ~= nil then
 		pathBase = map:sub(1, 1 + (#map - firstSlash))
 	end
 
@@ -45,10 +43,10 @@ function sti.new(map)
 	setfenv(mapFunc, {})
 	ret.map = mapFunc()
 
-	ret.map.quads = {}
-
-	-- Create array of quads, tileset's lastgid
+	-- Create array of tile data
+	ret.tiles = {}
 	local gid = 1
+
 	for i, tileset in ipairs(ret.map.tilesets) do
 		local iw = tileset.imagewidth
 		local ih = tileset.imageheight
@@ -58,7 +56,6 @@ function sti.new(map)
 		local m  = tileset.margin
 		local w  = math.floor((iw - m - s) / (tw + s))
 		local h  = math.floor((ih - m - s) / (th + s))
-		tileset.lastgid	= tileset.firstgid + w * h - 1
 
 		for y = 1, h do
 			for x = 1, w do
@@ -69,7 +66,16 @@ function sti.new(map)
 				if x > 1 then qx = qx + s end
 				if y > 1 then qy = qy + s end
 
-				ret.map.quads[gid] = love.graphics.newQuad(qx, qy, tw, th, iw, ih)
+				ret.tiles[gid] = {
+					gid = gid,
+					tileset = tileset,
+					quad = love.graphics.newQuad(qx, qy, tw, th, iw, ih),
+					offset = {
+						x = tileset.tileoffset.x - ret.map.tilewidth,
+						y = tileset.tileoffset.y - tileset.tileheight
+					}
+				}
+
 				gid = gid + 1
 			end
 		end
@@ -82,6 +88,8 @@ function sti.new(map)
 
 	-- Add tile structure, images
 	for i, layer in ipairs(ret.map.layers) do
+
+
 		if layer.type == "tilelayer" then
 			layer.data = ret:createTileLayerData(layer)
 		end
@@ -111,7 +119,7 @@ end
 function Map:draw()
 	for i, layer in ipairs(self.map.layers) do
 		if layer.type == "tilelayer" then
-			self:drawTileLayer(1, layer)
+			self:drawTileLayer(i, layer)
 		elseif layer.type == "objectgroup" then
 			self:drawObjectLayer(i, layer)
 		elseif layer.type == "imagelayer" then
@@ -126,23 +134,22 @@ function Map:drawTileLayer(index, layer)
 	if layer.visible then
 		love.graphics.setColor(255, 255, 255, 255 * layer.opacity)
 
+		local tw = self.map.tilewidth
+		local th = self.map.tileheight
+
 		for y,v in pairs(layer.data) do
 			for x,tile in pairs(v) do
 				if tile.gid ~= 0 then
-					local ts = self.map.tilesets[tile.tileset]
-					local tw = self.map.tilewidth
-					local th = self.map.tileheight
-					local tx = x * tw + ts.tileoffset.x - tw
-					local ty = y * th + ts.tileoffset.y + (th - ts.tileheight) - th
+					local tx = x * tw + tile.offset.x
+					local ty = y * th + tile.offset.y
 
-					love.graphics.draw(ts.image, self.map.quads[tile.gid], tx, ty)
+					love.graphics.draw(tile.tileset.image, tile.quad, tx, ty)
 				end
 			end
 		end
 
 		love.graphics.setColor(255, 255, 255, 255)
 	end
-
 end
 
 function Map:drawObjectLayer(index, layer)
@@ -164,24 +171,11 @@ end
 function Map:createTileLayerData(layer)
 	local i = 1
 	local map = {}
+
 	for y = 1, layer.height do
 		map[y] = {}
 		for x = 1, layer.width do
-			local gid	= layer.data[i]
-			local ts	= 0
-
-			for k, tileset in ipairs(self.map.tilesets) do
-				if gid >= tileset.firstgid and gid <= tileset.lastgid then
-					ts = k
-					break
-				end
-			end
-
-			map[y][x] = {
-				gid		= gid,
-				tileset	= ts,
-			}
-
+			map[y][x] = self.tiles[layer.data[i]]
 			i = i + 1
 		end
 	end
