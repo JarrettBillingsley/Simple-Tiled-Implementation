@@ -6,20 +6,21 @@ Simple Tiled Implementation is a [**Tiled Map Editor**][Tiled] library designed 
 Quick Example
 --
 ---
-```lua     
+```lua
 local sti = require "sti"
+local myMap
 
 function love.load()
     -- Load a map exported from Tiled as a lua file
-    sti:new("assets.maps.map01")
+    myMap = sti.new("assets/maps/map01.lua")
 end
 
 function love.update(dt)
-	sti:update(dt) -- this doesn't do anything (yet)!
+	myMap:update(dt) -- this doesn't do anything (yet)!
 end
 
 function love.draw()
-	sti:draw()
+	myMap:draw()
 end
 
 ```

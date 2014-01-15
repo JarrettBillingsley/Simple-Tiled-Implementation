@@ -88,8 +88,6 @@ function sti.new(map)
 
 	-- Add tile structure, images
 	for i, layer in ipairs(ret.map.layers) do
-
-
 		if layer.type == "tilelayer" then
 			layer.data = ret:createTileLayerData(layer)
 		end
